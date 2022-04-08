@@ -5,4 +5,3 @@ package-lock.json
 index.ts
 index.d.ts
 tsconfig.json
-example_node_extract.js
