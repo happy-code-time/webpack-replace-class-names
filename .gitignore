@@ -2,3 +2,4 @@ node_modules
 yarn.lock
 lib/index.js
 index.js
+example_node_extract.js
