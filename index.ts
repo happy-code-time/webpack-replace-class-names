@@ -1,2 +1,2 @@
-const ExtractCssNames = require('./lib');
-module.exports = ExtractCssNames;
+const WebpackReplaceClassNames = require('./lib');
+module.exports = WebpackReplaceClassNames;

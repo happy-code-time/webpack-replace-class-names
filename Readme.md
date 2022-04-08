@@ -1,210 +1,165 @@
-# Extract Css Names
+# Webpack Replace Class Names
 
-Extract all CSS class and id names to generate (replace with) random names (a-z0-9). 
-This module returns all matches. You can use it, to replace matches inside different files.
+Replace all CSS class name's and id's based on given match array. 
 
-# How it works
+# Example how to use it in webpack
 
-Read data from the provided key "data". Extract all names and generate minified class names. 
-The result (for each file) are stored inside 2 files:
+    const WebpackReplaceClassNames = require('webpack-replace-class-names');
+    const matchesFile = `${__dirname}/extracted-names-for-js`;
 
-    outputCss
-    outputJs
-
-For each file the output are written to the provided file ouput path, in the next iteration the current files output/content readed to avoid dupplicate names. 
-
-# Example how to use it with gulp
-
-    const ExtractCssNames = require('extract-css-names');
-    const through = require('through2');
-    const fs = require("fs");
-
-    gulp.task('extract:css', (done) => 
+    if(!fs.existsSync(matchesFile))
     {
-        /**
-         * Storage
-         */
-        const outputCss = `${__dirname}/extracted-names-for-css`;
-        const outputJs = `${__dirname}/extracted-names-for-js`;
-        /**
-         * Remove old matches
-         */
-        if (fs.existsSync(outputCss)) { fs.unlinkSync(outputCss); }
-        if (fs.existsSync(outputJs)) { fs.unlinkSync(outputJs); }
-
-        return gulp
-            .src(
-                [
-                    `public/css/packages.css`,
-                    `public/css/app.css`,
-                ]
-            )
-            .pipe(
-                /**
-                * Loop trought each file and extract names
-                */
-                through.obj(async (cssFileBuffer, enc, cb) => 
-                {
-                    await new ExtractCssNames(
-                        {
-                            path: cssFileBuffer.path,
-                            outputCss,
-                            outputJs,
-                            data: cssFileBuffer.contents.toString(),
-                            restModulo: 10000, 
-                            restTime: 200,
-                            logger: {
-                                logging: true,
-                                prefix: 'Extract',
-                                displayFilename: true,
-                                displayPercentage: true,
-                                type: 'bar', // spinner | bar | dots | dots2 | arc | line
-                                barBg: 'bgCyan'
-                            },
-                            displayResult: true,
-                            ignore: [
-                                '.ContainerCompact',
-                            ],
-                        }
-                    );
-
-                    cb(null, cssFileBuffer);
-                })
-            );
-    });
-
-    gulp.task('obfuscate:css',
-        gulp.series(
-            [
-                'extract:css'
-            ]
-        )
-    );
-
-## Example how to use it with node js
-
-    const ExtractCssNames = require('extract-css-names');
-    const fs = require("fs");
-
-    /**
-    * Matches storage
-    */
-    const outputCss = `${__dirname}/extracted-names-for-css`;
-    const outputJs = `${__dirname}/extracted-names-for-js`;
-    /**
-    * Remove old matches
-    */
-    if (fs.existsSync(outputCss)) { fs.unlinkSync(outputCss); }
-    if (fs.existsSync(outputJs)) { fs.unlinkSync(outputJs); }
-
-    const files = [
-        `public/css/packages.css`,
-        `public/css/app.css`,
-    ];
-
-    const extract = async (c = 0) =>
-    {
-        const data = fs.readFileSync(files[c], 'UTF-8');
-
-        await new ExtractCssNames(
-            {
-                path: files[c],
-                outputCss,
-                outputJs,
-                data,
-                restModulo: 10000,
-                restTime: 200,
-                logger: {
-                    logging: true,
-                    prefix: 'Extract',
-                    displayFilename: true,
-                    displayPercentage: true,
-                    type: 'bar', // spinner | bar | dots | dots2 | arc | line
-                    barBg: 'bgCyan'
-                },
-                displayResult: true,
-                ignore: [
-                    '.ContainerCompact'
-                ],
-            }
-        );
-
-        c++;
-
-        if(undefined !== files[c])
-        {
-            await extract(c);
-        }
+        throw new Error(`The required file cannot be found: ${matchesFile}`);
     }
 
-    extract();
+    let matches = [];
+    try{
+        matches = fs.readFileSync(matchesFile, 'UTF-8');
+        matches = JSON.parse(matches);
+    }
+    catch(e)
+    {
+        throw new Error(e);
+    }
 
-# Example file content of outputCss
+    const config = {
+        resolve: {
+            extensions: ['.ts', '.js', '.tsx'],
+        },
+        cache: ....,
+        entry: ...,
+        output: ....,
+        module: {
+            rules: [
+                ....
+            ]
+        },
+        externals: {....},
+        plugins: [
+            ....
+            new WebpackReplaceClassNames(
+                {
+                    matches,
+                    restModulo: 10000,
+                    restTime: 200, 
+                    displayResult: false,
+                    ignore: [],
+                    attributes: [],
+                    forceReplace: [
+                        {
+                            find: '_App',
+                            type: 'id'
+                        },
+                        {
+                            find: '_Diet',
+                            type: 'id'
+                        }
+                    ],
+                    logger: {
+                        logging: true,
+                        prefix: 'Replace',
+                        displayFilename: true,
+                        displayPercentage: true,
+                        type: 'bar',
+                        barBg: 'bgCyan'
+                    },
+                }
+            )
+        ]
+    };
 
-    [
-        {
-            "find": ".rc-calendar-year-panel-decade-select-arrow",
-            "replace": ".c",
-            "type": "class"
-        },
-        {
-            "find": ".rc-calendar-decade-panel-last-century-cell",
-            "replace": ".d",
-            "type": "class"
-        },
-        {
-            "find": ".rc-calendar-decade-panel-next-century-cell",
-            "replace": ".e",
-            "type": "class"
-        },
-        {
-            "find": ".rc-calendar-picker-slide-up-appear-active",
-            "replace": ".f",
-            "type": "class"
-        }
-    ]
+# Example of HTML file content before replacement
 
-## Example file content of outputJs
+    <div class="px-1">
+        <div class="row">
+            <div class="col-6 col-lg-3 flex">
+                <div class="card box-shadow-transparent w-100 bg-transparent">
+                    <div class="card-header">
+                        <h1 class="card-title text-green font-xl">service</h1>
+                    </div>
+                    <div class="card-body table-responsive p-0">
+                        <table class="table table-hover text-nowrap w-100">
+                            <tbody>
+                                <tr>
+                                    <td class="border-none py-0"></td>
+                                </tr>
+                                <tr>
+                                    <td class="border-none py-0"></td>
+                                </tr>
+                                <tr>
+                                    <td class="border-none py-0"></td>
+                                </tr>
+                                <tr>
+                                    <td class="border-none py-0"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    [
-        {
-            "find":"rc-calendar-year-panel-decade-select-arrow",
-            "replace":"c",
-            "type":"class"
-        },
-        {
-            "find":"rc-calendar-decade-panel-last-century-cell",
-            "replace":"d",
-            "type":"class"
-        },
-        {
-            "find":"rc-calendar-decade-panel-next-century-cell",
-            "replace":"e",
-            "type":"class"
-        },
-        {
-            "find":"rc-calendar-picker-slide-up-appear-active",
-            "replace":"f",
-            "type":"class"
-        }
-    ]
+# Example of HTML file content after replacement 
 
-# ExtractCssNames options 
+    <div class="k189">
+        <div class="j191">
+            <div class="y182 d141 w185">
+                <div class="c186 w195 w-100 d67">
+                    <div class="f103">
+                        <h1 class="g118 m122 i198">service</h1>
+                    </div>
+                    <div class="s129 o49 f192">
+                        <table class="c183 s102 b104 w-100">
+                            <tbody>
+                                <tr>
+                                    <td class="m199 c189"></td>
+                                </tr>
+                                <tr>
+                                    <td class="m199 c189"></td>
+                                </tr>
+                                <tr>
+                                    <td class="m199 c189"></td>
+                                </tr>
+                                <tr>
+                                    <td class="m199 c189"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+# Limitations
+
+Only Modules there are generated from the base path (not node_modules) are replaced. Modules imported from node_modules are not replaced. External module names has to be in the "ignore" list.
+
+# This module are based on the 2 other modules
+
+Extract class and id names from css file
+
+[extract-css-names](https://www.npmjs.com/package/extract-css-names)
+
+Replace class and id names in css files based on the "extract-css-names" module.
+
+[replace-css-names](https://www.npmjs.com/package/replace-css-names)
+
+# WebpackReplaceClassNames options 
 
 | Option          | type    | Description   
 | --------------- | ------- | ------------- |
-| `path`          | string  | Path of the current file
-| `outputCss`     | string  | Path to store/write current matches for replacement in CSS files
-| `outputJs`      | string  | Path to store/write current matches for replacement in JS files
-| `data`          | string  | Path to file or (css) data as string. If is file (fs.existsSync), the file content are readed.
-| `encoding`      | string  | Read/Write file with this encoding standard. Default 'UTF-8'.
+| `matches`       | array   | Array of objects: [ { find: string; replace: string; type: string;}, ... ]
+| `attributes`    | array   | Array of strings/atrribute names to replace. Default [ 'className', 'id' ]
+| `forceReplace`  | array   | Array of strings. If sensitive match, does not replace a class or id, you can force it ( the forced name has to be availbale in the matches array). Structure [ { find: string; type: string } ]
 | `restModulo`    | number  | Each number of lines should be made a break
 | `restTime`      | number  | Duration of the break in ms
-| `displayResult` | boolean | Display the match result in the terminal
-| `ignore`        | array   | Ignore names to extract (with provided type: '.' for class and '#' for id), [ '.classNameToIgnore', '#idToIgnore' ]
+| `displayResult` | boolean | Display the replace result in the terminal
+| `ignore`        | array   | Ignore names to replace
 | `logger`        | object  | Logger options
-    
-# ExtractCssNames logger options 
+
+# WebpackReplaceClassNames logger options 
 
 | Option              | type    | Description   
 | ------------------- | ------- | ------------- |

@@ -1,1 +1,1 @@
-declare const ExtractCssNames: any;
+declare const WebpackReplaceClassNames: any;
